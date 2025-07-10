@@ -300,6 +300,27 @@ class KafkaStreamingService extends EventEmitter {
     this.emit('risk_event', data);
   }
 
+  async handleSystemMetrics(data) {
+    console.log('📊 Processing system metrics:', data);
+    
+    // Store system metrics
+    this.dataStore.alerts.push({
+      ...data,
+      type: 'system_metrics',
+      timestamp: new Date()
+    });
+    
+    // Check for system alerts
+    if (data.cpu_usage > 90) {
+      await this.sendAlert('CRITICAL', `High CPU usage: ${data.cpu_usage}%`);
+    } else if (data.memory_usage > 85) {
+      await this.sendAlert('WARNING', `High memory usage: ${data.memory_usage}%`);
+    }
+
+    // Emit event for other services
+    this.emit('system_metrics', data);
+  }
+
   async handleETLEvent(data) {
     console.log('🔄 Processing ETL event:', data);
     
@@ -365,11 +386,32 @@ class KafkaStreamingService extends EventEmitter {
   // Broadcast to WebSocket clients
   broadcastToClients(topic, data) {
     if (this.webSocketServer) {
-      this.webSocketServer.emit('stream-update', {
+      // Broadcast to dashboard-updates room
+      this.webSocketServer.to('dashboard-updates').emit('stream-update', {
         topic,
         data,
         timestamp: new Date().toISOString()
       });
+      
+      // Also emit specific event types for backward compatibility
+      switch (topic) {
+        case this.topics.BUDGET_UPDATES:
+          this.webSocketServer.to('dashboard-updates').emit('budget-update', data);
+          break;
+        case this.topics.PROJECT_UPDATES:
+          this.webSocketServer.to('dashboard-updates').emit('project-update', data);
+          break;
+        case this.topics.COMPLIANCE_ALERTS:
+          this.webSocketServer.to('dashboard-updates').emit('compliance-update', data);
+          break;
+        case this.topics.RISK_EVENTS:
+          this.webSocketServer.to('dashboard-updates').emit('risk-update', data);
+          break;
+        case this.topics.TRANSACTION_STREAM:
+          this.webSocketServer.to('dashboard-updates').emit('activity-update', data);
+          break;
+      }
+      
       console.log(`📡 Broadcasted ${topic} update to WebSocket clients`);
     }
   }

@@ -9,13 +9,18 @@ const { Server } = require('socket.io');
 
 require('dotenv').config();
 
+// Import streaming system
+const { initializeStreamingSystem } = require('./streaming_main');
+
 const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
     origin: [
       process.env.FRONTEND_URL || "http://localhost:3000",
-      "http://192.168.4.25:3000"
+      "http://localhost:3002",
+      "http://192.168.4.25:3000",
+      "http://192.168.4.25:3002"
     ],
     methods: ["GET", "POST"]
   }
@@ -28,7 +33,9 @@ app.use(morgan('combined'));
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || "http://localhost:3000",
-    "http://192.168.4.25:3000"
+    "http://localhost:3002",
+    "http://192.168.4.25:3000",
+    "http://192.168.4.25:3002"
   ],
   credentials: true
 }));
@@ -179,10 +186,80 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(` Server running on port ${PORT}`);
-  console.log(` Dashboard API: http://localhost:${PORT}/api/health`);
+const PORT = process.env.PORT || 5050;
+
+// Initialize streaming system alongside main server
+let streamingSystem = null;
+
+async function startServer() {
+  try {
+    // Start main server
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📊 Dashboard API: http://localhost:${PORT}/api/health`);
+    });
+
+    // Initialize streaming system (runs on separate port)
+    if (process.env.ENABLE_STREAMING !== 'false') {
+      console.log('🔄 Initializing streaming system...');
+      streamingSystem = await initializeStreamingSystem();
+      console.log('✅ Streaming system initialized successfully');
+      
+      // Connect streaming to main WebSocket
+      if (streamingSystem && streamingSystem.kafkaService) {
+        streamingSystem.kafkaService.setWebSocketServer(io);
+        console.log('🔗 Streaming system connected to main WebSocket server');
+      }
+    } else {
+      console.log('⚠️ Streaming system disabled via environment variable');
+    }
+
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('🛑 Received SIGTERM, shutting down gracefully...');
+  
+  if (streamingSystem) {
+    try {
+      await streamingSystem.dataStreamer.stopProductionStreaming();
+      await streamingSystem.kafkaService.disconnect();
+      console.log('✅ Streaming system shut down');
+    } catch (error) {
+      console.error('❌ Error shutting down streaming system:', error);
+    }
+  }
+  
+  server.close(() => {
+    console.log('✅ Main server closed');
+    process.exit(0);
+  });
 });
 
-module.exports = { app, pool };
+process.on('SIGINT', async () => {
+  console.log('🛑 Received SIGINT, shutting down gracefully...');
+  
+  if (streamingSystem) {
+    try {
+      await streamingSystem.dataStreamer.stopProductionStreaming();
+      await streamingSystem.kafkaService.disconnect();
+      console.log('✅ Streaming system shut down');
+    } catch (error) {
+      console.error('❌ Error shutting down streaming system:', error);
+    }
+  }
+  
+  server.close(() => {
+    console.log('✅ Main server closed');
+    process.exit(0);
+  });
+});
+
+// Start the server
+startServer();
+
+module.exports = { app, pool, streamingSystem };

@@ -1,0 +1,39 @@
+=== Frontend Logs (last 10 lines) ===
+[TAILING] Tailing last 10 lines for [frontend] process (change the value with --lines option)
+/Users/asif/.pm2/logs/frontend-error.log last 10 lines:
+/Users/asif/.pm2/logs/frontend-out.log last 10 lines:
+0|frontend | 
+0|frontend | > frontend@0.1.0 dev
+0|frontend | > next dev
+0|frontend | 
+0|frontend |    ▲ Next.js 15.3.5
+0|frontend |    - Local:        http://localhost:3000
+0|frontend |    - Network:      http://192.168.4.25:3000
+0|frontend | 
+0|frontend |  ✓ Starting...
+0|frontend |  ✓ Ready in 1053ms
+
+
+=== Backend Logs (last 10 lines) ===
+[TAILING] Tailing last 10 lines for [backend] process (change the value with --lines option)
+/Users/asif/.pm2/logs/backend-error.log last 10 lines:
+1|backend  | ":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect ECONNREFUSED 127.0.0.1:9092","retryCount":5,"retryTime":3650}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-10T20:38:28.380Z","logger":"kafkajs","message":"[Connection] Connection error: connect ECONNREFUSED 127.0.0.1:9092","broker":"localhost:9092","clientId":"citi-dashboard-streaming","stack":"Error: connect ECONNREFUSED 127.0.0.1:9092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-10T20:38:28.380Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect ECONNREFUSED 127.0.0.1:9092","retryCount":6,"retryTime":7108}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-10T20:38:35.492Z","logger":"kafkajs","message":"[Connection] Connection error: connect ECONNREFUSED 127.0.0.1:9092","broker":"localhost:9092","clientId":"citi-dashboard-streaming","stack":"Error: connect ECONNREFUSED 127.0.0.1:9092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-10T20:38:35.492Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect ECONNREFUSED 127.0.0.1:9092","retryCount":7,"retryTime":13266}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-10T20:38:48.761Z","logger":"kafkajs","message":"[Connection] Connection error: connect ECONNREFUSED 127.0.0.1:9092","broker":"localhost:9092","clientId":"citi-dashboard-streaming","stack":"Error: connect ECONNREFUSED 127.0.0.1:9092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-10T20:38:48.761Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection error: connect ECONNREFUSED 127.0.0.1:9092","retryCount":8,"retryTime":26994}
+
+/Users/asif/.pm2/logs/backend-out.log last 10 lines:
+1|backend  |   BUDGET_UPDATES: { interval: '300s', batchSize: 5, priority: 'HIGH' },
+1|backend  |   PROJECT_UPDATES: { interval: '180s', batchSize: 3, priority: 'HIGH' },
+1|backend  |   COMPLIANCE_ALERTS: { interval: '600s', batchSize: 2, priority: 'CRITICAL' },
+1|backend  |   TRANSACTION_STREAM: { interval: '10s', batchSize: 20, priority: 'MEDIUM' },
+1|backend  |   RISK_EVENTS: { interval: '900s', batchSize: 1, priority: 'CRITICAL' },
+1|backend  |   SYSTEM_METRICS: { interval: '30s', batchSize: 10, priority: 'LOW' }
+1|backend  | }
+1|backend  | ✅ Streaming system initialized successfully
+1|backend  | 📡 WebSocket server connected to Kafka streaming
+1|backend  | 🔗 Streaming system connected to main WebSocket server
+
