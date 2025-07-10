@@ -4,6 +4,24 @@ const axios = require('axios');
 
 const LM_STUDIO_URL = process.env.LM_STUDIO_URL || 'http://192.168.4.25:1235';
 
+// Check if message contains data integration intent
+async function checkForDataIntegrationIntent(message) {
+  const lowerMessage = message.toLowerCase();
+  
+  const dataIntegrationKeywords = [
+    'update budget', 'refresh budget', 'sync budget',
+    'update project', 'refresh project', 'sync project',
+    'update data', 'refresh data', 'sync data',
+    'update excel', 'refresh excel', 'sync excel',
+    'update spreadsheet', 'refresh spreadsheet', 'sync spreadsheet',
+    'update compliance', 'refresh compliance', 'sync compliance',
+    'load data', 'import data', 'pull data',
+    'latest data', 'new data', 'fresh data'
+  ];
+  
+  return dataIntegrationKeywords.some(keyword => lowerMessage.includes(keyword));
+}
+
 const getDashboardContext = async (pool) => {
   try {
     // Get SVP data
@@ -117,10 +135,55 @@ router.post('/chat', async (req, res) => {
       return res.status(400).json({ error: 'Message is required' });
     }
 
+    // Check if this is a data integration request
+    const isDataIntegrationRequest = await checkForDataIntegrationIntent(message);
+    
+    if (isDataIntegrationRequest) {
+      // Handle data integration request
+      try {
+        const response = await fetch('http://localhost:5050/api/ai/process-request', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message })
+        });
+
+        const result = await response.json();
+        
+        return res.json({
+          response: result.success 
+            ? `✅ ${result.message}\n\n📊 Processed ${result.affectedRecords} records in ${result.processingTime}ms\n\nThe dashboard data has been updated and will refresh automatically.`
+            : `❌ ${result.message}\n\nPlease check your data sources and try again.`,
+          conversationId: conversationId || Date.now().toString(),
+          timestamp: new Date().toISOString(),
+          isDataIntegration: true,
+          integrationResult: result
+        });
+      } catch (integrationError) {
+        console.error('Data integration error:', integrationError);
+        return res.json({
+          response: "I encountered an issue while processing your data integration request. Please ensure your data sources are accessible and try again.",
+          conversationId: conversationId || Date.now().toString(),
+          timestamp: new Date().toISOString(),
+          error: true
+        });
+      }
+    }
+
     const dashboardContext = await getDashboardContext(pool);
 
     const systemPrompt = `You are ARIA, the AI Regulatory Intelligence Assistant for the Citi Bank LATAM RegInsight Department dashboard. 
 You help Alex Rodriguez (the Director) and other users understand dashboard data, answer questions about budgets, projects, compliance, and risks.
+
+IMPORTANT: You can also help with data integration tasks. If users ask to:
+- "Update budget data" or "refresh budget from Excel"
+- "Update project data" or "sync project information"
+- "Refresh compliance data"
+- "Update data from spreadsheet"
+- "Sync latest data"
+
+You should recognize these as data integration requests and handle them accordingly.
 
 Current Dashboard Data:
 SUMMARY:

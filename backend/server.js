@@ -34,10 +34,14 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Rate limiting
+// Rate limiting - More generous for development
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 1000, // Much higher limit
+  message: {
+    error: 'Too many requests, please try again later',
+    retryAfter: '5 minutes'
+  }
 });
 app.use('/api/', limiter);
 
@@ -70,6 +74,10 @@ const activityRoutes = require('./routes/activities');
 const riskRoutes = require('./routes/risk');
 const chatbotRoutes = require('./routes/chatbot');
 
+// AI Data Integration Service
+const AIDataIntegrationService = require('./services/aiDataIntegration');
+const aiService = new AIDataIntegrationService(process.env.LLM_ENDPOINT || 'http://localhost:1234');
+
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/budget', budgetRoutes);
 app.use('/api/projects', projectRoutes);
@@ -77,6 +85,60 @@ app.use('/api/compliance', complianceRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/risk', riskRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+
+// AI Data Integration Routes
+app.post('/api/ai/process-request', async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    console.log('Processing AI request:', message);
+    const result = await aiService.processNLRequest(message);
+    
+    // Broadcast update to all connected clients if successful
+    if (result.success) {
+      io.to('dashboard-updates').emit('data_updated', {
+        type: 'ai_integration',
+        payload: result,
+        timestamp: new Date()
+      });
+    }
+    
+    res.json(result);
+  } catch (error) {
+    console.error('AI processing error:', error);
+    res.status(500).json({ 
+      success: false,
+      message: `AI processing failed: ${error.message}`,
+      timestamp: new Date()
+    });
+  }
+});
+
+// Get available data sources
+app.get('/api/ai/data-sources', (req, res) => {
+  try {
+    const dataSources = aiService.getDataSources();
+    res.json({ success: true, dataSources });
+  } catch (error) {
+    console.error('Error getting data sources:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Register new data source
+app.post('/api/ai/data-sources', (req, res) => {
+  try {
+    const dataSource = req.body;
+    aiService.registerDataSource(dataSource);
+    res.json({ success: true, message: 'Data source registered successfully' });
+  } catch (error) {
+    console.error('Error registering data source:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // Health check
 app.get('/api/health', (req, res) => {
