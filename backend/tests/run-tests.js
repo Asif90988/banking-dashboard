@@ -4,8 +4,6 @@ const { execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { createTestExcelFile, createTestProjectFile } = require('./utils/testDataGenerator');
-const { runPerformanceBenchmark } = require('./unit/aiDataIntegration.test');
-const { runManualIntegrationTest } = require('./integration/dataFlow.test');
 
 // Colors for console output
 const colors = {
@@ -104,7 +102,7 @@ async function runUnitTests() {
     logInfo('Running AI Data Integration Service tests...');
     
     // Import and run our test functions
-    const { AIDataIntegrationService } = require('../services/aiDataIntegration');
+    const AIDataIntegrationService = require('../services/aiDataIntegration');
     const { testConfig, testDataSources } = require('./utils/testDataGenerator');
     
     // Basic service instantiation test
@@ -210,7 +208,7 @@ async function runPerformanceTests() {
   try {
     logInfo('Starting performance benchmark...');
     
-    const { AIDataIntegrationService } = require('../services/aiDataIntegration');
+    const AIDataIntegrationService = require('../services/aiDataIntegration');
     const { testConfig, testDataSources } = require('./utils/testDataGenerator');
     
     const service = new AIDataIntegrationService(testConfig.llmEndpoint);

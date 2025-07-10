@@ -1,0 +1,30 @@
+{
+  "name": "citi-dashboard-vps-streamer",
+  "version": "1.0.0",
+  "description": "Production-grade data streaming service for Citi Dashboard",
+  "main": "vps-streamer.js",
+  "scripts": {
+    "start": "node vps-streamer.js",
+    "dev": "node vps-streamer.js --dev",
+    "test": "node test-vps-streamer.js",
+    "health": "node health-check.js",
+    "stop": "pkill -f vps-streamer.js",
+    "restart": "npm run stop && npm start",
+    "status": "ps aux | grep vps-streamer"
+  },
+  "dependencies": {
+    "kafkajs": "^2.2.4"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": [
+    "kafka",
+    "streaming",
+    "financial",
+    "dashboard",
+    "real-time"
+  ],
+  "author": "Citi Dashboard Team",
+  "license": "MIT"
+}

@@ -1,0 +1,317 @@
+[
+  {
+    "name": "budget_etl",
+    "source": {
+      "type": "excel",
+      "location": "./data/budget/Q4_Budget_2024.xlsx",
+      "mapping": {
+        "svp_id": {
+          "sourceField": "SVP ID",
+          "dataType": "string",
+          "required": true
+        },
+        "svp_name": {
+          "sourceField": "SVP Name",
+          "dataType": "string",
+          "required": true,
+          "transformation": "trim"
+        },
+        "department": {
+          "sourceField": "Department",
+          "dataType": "string",
+          "required": true,
+          "transformation": "trim"
+        },
+        "allocated_budget": {
+          "sourceField": "Allocated Budget",
+          "dataType": "number",
+          "required": true
+        },
+        "spent_amount": {
+          "sourceField": "Spent Amount",
+          "dataType": "number",
+          "required": true
+        },
+        "remaining_budget": {
+          "sourceField": "Remaining Budget",
+          "dataType": "number",
+          "required": false,
+          "defaultValue": 0
+        },
+        "active_projects": {
+          "sourceField": "Active Projects",
+          "dataType": "number",
+          "required": false,
+          "defaultValue": 0
+        },
+        "last_updated": {
+          "sourceField": "Last Updated",
+          "dataType": "date",
+          "required": false,
+          "defaultValue": "2025-07-10T03:34:46.321Z"
+        }
+      }
+    },
+    "destination": {
+      "type": "database",
+      "location": "postgresql://localhost:5432/citi_dashboard",
+      "table": "budget_data"
+    },
+    "transformations": [
+      {
+        "field": "utilization_rate",
+        "operation": "calculate",
+        "parameters": {
+          "formula": "utilization_rate"
+        }
+      },
+      {
+        "field": "budget_status",
+        "operation": "calculate",
+        "parameters": {
+          "formula": "budget_status"
+        }
+      },
+      {
+        "field": "svp_name",
+        "operation": "clean",
+        "parameters": {
+          "removeSpecialChars": false,
+          "removeExtraSpaces": true
+        }
+      }
+    ],
+    "schedule": "0 */6 * * *",
+    "enabled": true
+  },
+  {
+    "name": "project_etl",
+    "source": {
+      "type": "excel",
+      "location": "./data/projects/Project_Tracker_2024.xlsx",
+      "mapping": {
+        "project_id": {
+          "sourceField": "Project ID",
+          "dataType": "string",
+          "required": true
+        },
+        "project_name": {
+          "sourceField": "Project Name",
+          "dataType": "string",
+          "required": true,
+          "transformation": "trim"
+        },
+        "status": {
+          "sourceField": "Status",
+          "dataType": "string",
+          "required": true,
+          "transformation": "lowercase"
+        },
+        "progress_percent": {
+          "sourceField": "Progress %",
+          "dataType": "number",
+          "required": true
+        },
+        "budget_allocated": {
+          "sourceField": "Budget Allocated",
+          "dataType": "number",
+          "required": true
+        },
+        "budget_spent": {
+          "sourceField": "Budget Spent",
+          "dataType": "number",
+          "required": true
+        },
+        "start_date": {
+          "sourceField": "Start Date",
+          "dataType": "date",
+          "required": true
+        },
+        "end_date": {
+          "sourceField": "End Date",
+          "dataType": "date",
+          "required": true
+        },
+        "svp_owner": {
+          "sourceField": "SVP Owner",
+          "dataType": "string",
+          "required": true,
+          "transformation": "trim"
+        },
+        "risk_level": {
+          "sourceField": "Risk Level",
+          "dataType": "string",
+          "required": false,
+          "defaultValue": "Low"
+        }
+      }
+    },
+    "destination": {
+      "type": "database",
+      "location": "postgresql://localhost:5432/citi_dashboard",
+      "table": "project_data"
+    },
+    "transformations": [
+      {
+        "field": "budget_utilization",
+        "operation": "calculate",
+        "parameters": {
+          "formula": "utilization_rate"
+        }
+      },
+      {
+        "field": "days_remaining",
+        "operation": "calculate",
+        "parameters": {
+          "formula": "days_remaining"
+        }
+      },
+      {
+        "field": "project_health",
+        "operation": "calculate",
+        "parameters": {
+          "formula": "project_health"
+        }
+      }
+    ],
+    "schedule": "0 */4 * * *",
+    "enabled": true
+  },
+  {
+    "name": "compliance_etl",
+    "source": {
+      "type": "excel",
+      "location": "./data/compliance/Compliance_Tracker_2024.xlsx",
+      "mapping": {
+        "regulation_id": {
+          "sourceField": "Regulation ID",
+          "dataType": "string",
+          "required": true
+        },
+        "regulation_name": {
+          "sourceField": "Regulation Name",
+          "dataType": "string",
+          "required": true,
+          "transformation": "trim"
+        },
+        "compliance_status": {
+          "sourceField": "Compliance Status",
+          "dataType": "string",
+          "required": true,
+          "transformation": "lowercase"
+        },
+        "last_audit_date": {
+          "sourceField": "Last Audit Date",
+          "dataType": "date",
+          "required": false
+        },
+        "next_audit_date": {
+          "sourceField": "Next Audit Date",
+          "dataType": "date",
+          "required": true
+        },
+        "risk_score": {
+          "sourceField": "Risk Score",
+          "dataType": "number",
+          "required": true
+        },
+        "responsible_department": {
+          "sourceField": "Responsible Department",
+          "dataType": "string",
+          "required": true,
+          "transformation": "trim"
+        },
+        "findings_count": {
+          "sourceField": "Findings Count",
+          "dataType": "number",
+          "required": false,
+          "defaultValue": 0
+        }
+      }
+    },
+    "destination": {
+      "type": "database",
+      "location": "postgresql://localhost:5432/citi_dashboard",
+      "table": "compliance_data"
+    },
+    "transformations": [
+      {
+        "field": "days_to_audit",
+        "operation": "calculate",
+        "parameters": {
+          "formula": "days_to_audit"
+        }
+      },
+      {
+        "field": "compliance_health",
+        "operation": "calculate",
+        "parameters": {
+          "formula": "compliance_health"
+        }
+      }
+    ],
+    "schedule": "0 8 * * *",
+    "enabled": true
+  },
+  {
+    "name": "large_data_etl",
+    "source": {
+      "type": "json",
+      "location": "./data/generated/large_dataset.json",
+      "mapping": {
+        "id": {
+          "sourceField": "id",
+          "dataType": "string",
+          "required": true
+        },
+        "name": {
+          "sourceField": "name",
+          "dataType": "string",
+          "required": true,
+          "transformation": "trim"
+        },
+        "value": {
+          "sourceField": "value",
+          "dataType": "number",
+          "required": true
+        },
+        "category": {
+          "sourceField": "category",
+          "dataType": "string",
+          "required": true,
+          "transformation": "lowercase"
+        },
+        "created_at": {
+          "sourceField": "created_at",
+          "dataType": "date",
+          "required": false,
+          "defaultValue": "2025-07-10T03:34:46.321Z"
+        }
+      }
+    },
+    "destination": {
+      "type": "file",
+      "location": "./data/processed/large_dataset_processed.json"
+    },
+    "transformations": [
+      {
+        "field": "name",
+        "operation": "clean",
+        "parameters": {
+          "removeSpecialChars": false,
+          "removeExtraSpaces": true
+        }
+      },
+      {
+        "field": "value",
+        "operation": "validate",
+        "parameters": {
+          "minValue": 0,
+          "maxValue": 1000000
+        }
+      }
+    ],
+    "schedule": "0 2 * * *",
+    "enabled": false
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "timestamp": "2025-07-10T02:29:03.814Z",
+  "environment": {
+    "node": "v24.3.0",
+    "platform": "darwin",
+    "arch": "arm64"
+  },
+  "results": {
+    "setup": true,
+    "unit": true,
+    "integration": false,
+    "performance": true
+  },
+  "summary": {
+    "total": 4,
+    "passed": 3,
+    "failed": 1
+  }
+}
