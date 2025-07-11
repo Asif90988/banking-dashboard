@@ -7,7 +7,7 @@ class KafkaStreamingService extends EventEmitter {
     
     this.kafka = new Kafka({
       clientId: 'citi-dashboard-streaming',
-      brokers: [process.env.KAFKA_BROKER_URL || 'localhost:9092'],
+      brokers: [process.env.KAFKA_BROKER_URL || '145.223.79.90:9092'],
       logLevel: logLevel.INFO,
       retry: {
         initialRetryTime: 100,
@@ -43,7 +43,9 @@ class KafkaStreamingService extends EventEmitter {
       SYSTEM_METRICS: 'system-metrics',
       TRANSACTION_STREAM: 'transaction-stream',
       RISK_EVENTS: 'risk-events',
-      ETL_EVENTS: 'etl-events'
+      ETL_EVENTS: 'etl-events',
+      SANCTIONS_DATA: 'sanctions-data',
+      FLAGGED_TRANSACTIONS: 'flagged-transactions'
     };
 
     this.isConnected = false;
@@ -73,6 +75,37 @@ class KafkaStreamingService extends EventEmitter {
       // Check if Kafka is available (graceful fallback)
       const isKafkaAvailable = await this.checkKafkaAvailability();
       
+      // Initialize SanctionsDataProducer
+      const SanctionsDataProducer = require('./SanctionsDataProducer');
+      this.sanctionsProducer = new SanctionsDataProducer({
+        kafka: {
+          clientId: 'sanctions-producer',
+          brokers: [process.env.KAFKA_BROKER_URL || '145.223.79.90:9092']
+        },
+        topic: this.topics.SANCTIONS_DATA
+      });
+      await this.sanctionsProducer.initialize();
+      await this.sanctionsProducer.start();
+      console.log('✅ SanctionsDataProducer initialized and started');
+      
+      // Initialize SanctionsMatcher
+      const SanctionsMatcher = require('./SanctionsMatcher');
+      this.sanctionsMatcher = new SanctionsMatcher({
+        kafka: {
+          clientId: 'sanctions-matcher',
+          brokers: [process.env.KAFKA_BROKER_URL || '145.223.79.90:9092'],
+          groupId: 'sanctions-matcher-group'
+        },
+        topics: {
+          transactions: this.topics.TRANSACTION_STREAM,
+          sanctions: this.topics.SANCTIONS_DATA,
+          flagged: 'flagged-transactions'
+        }
+      }, this);
+      await this.sanctionsMatcher.initialize();
+      await this.sanctionsMatcher.start();
+      console.log('✅ SanctionsMatcher initialized and started');
+      
       if (!isKafkaAvailable) {
         console.log('⚠️ Kafka not available, running in simulation mode');
         this.initializeSimulationMode();
@@ -89,9 +122,10 @@ class KafkaStreamingService extends EventEmitter {
       // Create topics if they don't exist
       await this.createTopics();
       
-      // Subscribe to all topics
+      // Subscribe to all topics except FLAGGED_TRANSACTIONS (handled by SanctionsMatcher)
+      const topicsToSubscribe = Object.values(this.topics).filter(topic => topic !== this.topics.FLAGGED_TRANSACTIONS);
       await this.consumer.subscribe({
-        topics: Object.values(this.topics),
+        topics: topicsToSubscribe,
         fromBeginning: false
       });
 
@@ -200,6 +234,12 @@ class KafkaStreamingService extends EventEmitter {
           break;
         case this.topics.ETL_EVENTS:
           await this.handleETLEvent(data);
+          break;
+        case this.topics.SANCTIONS_DATA:
+          await this.handleSanctionsData(data);
+          break;
+        case this.topics.FLAGGED_TRANSACTIONS:
+          await this.handleFlaggedTransaction(data);
           break;
         default:
           console.warn(`Unknown topic: ${topic}`);
@@ -335,6 +375,44 @@ class KafkaStreamingService extends EventEmitter {
     this.emit('etl_event', data);
   }
 
+  async handleSanctionsData(data) {
+    console.log('🛡️ Processing sanctions data:', data);
+    
+    // Store sanctions data
+    if (!this.dataStore.sanctions) {
+      this.dataStore.sanctions = new Map();
+    }
+    this.dataStore.sanctions.set(data.id, data);
+    
+    // Check for potential matches or alerts (basic implementation)
+    if (data.sanctions && data.sanctions.length > 0) {
+      await this.sendAlert('WARNING', `Sanctioned entity detected: ${data.name} (${data.sanctions.join(', ')})`);
+    }
+
+    // Emit event for other services
+    this.emit('sanctions_data', data);
+  }
+
+  async handleFlaggedTransaction(data) {
+    console.log('🚨 Processing flagged transaction:', data);
+    
+    // Store flagged transaction
+    if (!this.dataStore.flaggedTransactions) {
+      this.dataStore.flaggedTransactions = [];
+    }
+    this.dataStore.flaggedTransactions.push({
+      ...data,
+      type: 'flagged_transaction',
+      timestamp: new Date()
+    });
+    
+    // Immediate notification for flagged transactions
+    await this.sendImmediateNotification(data);
+
+    // Emit event for other services
+    this.emit('flagged_transaction', data);
+  }
+
   // Production method to send data to Kafka
   async sendToStream(topic, data, key = null) {
     try {
@@ -409,6 +487,12 @@ class KafkaStreamingService extends EventEmitter {
           break;
         case this.topics.TRANSACTION_STREAM:
           this.webSocketServer.to('dashboard-updates').emit('activity-update', data);
+          break;
+        case this.topics.SANCTIONS_DATA:
+          this.webSocketServer.to('dashboard-updates').emit('sanctions-update', data);
+          break;
+        case this.topics.FLAGGED_TRANSACTIONS:
+          this.webSocketServer.to('dashboard-updates').emit('flagged-transaction', data);
           break;
       }
       
@@ -528,11 +612,27 @@ class KafkaStreamingService extends EventEmitter {
       .slice(0, limit);
   }
 
+  getSanctionsData(limit = 100) {
+    return Array.from(this.dataStore.sanctions?.values() || []).slice(0, limit);
+  }
+
+  getFlaggedTransactions(limit = 50) {
+    return (this.dataStore.flaggedTransactions || [])
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, limit);
+  }
+
   async disconnect() {
     try {
       if (!this.simulationMode) {
         await this.consumer.disconnect();
         await this.producer.disconnect();
+      }
+      if (this.sanctionsProducer) {
+        await this.sanctionsProducer.stop();
+      }
+      if (this.sanctionsMatcher) {
+        await this.sanctionsMatcher.stop();
       }
       this.isConnected = false;
       console.log('✅ Kafka Streaming Service disconnected');

@@ -80,10 +80,21 @@ const complianceRoutes = require('./routes/compliance');
 const activityRoutes = require('./routes/activities');
 const riskRoutes = require('./routes/risk');
 const chatbotRoutes = require('./routes/chatbot');
+const sanctionsRoutes = require('./routes/sanctions');
 
 // AI Data Integration Service
 const AIDataIntegrationService = require('./services/aiDataIntegration');
 const aiService = new AIDataIntegrationService(process.env.LLM_ENDPOINT || 'http://localhost:1234');
+
+// AI Analytics Services
+const PredictiveAnalyticsEngine = require('./services/ai/PredictiveAnalyticsEngine');
+const AnomalyDetectionSystem = require('./services/ai/AnomalyDetectionSystem');
+const { router: aiAnalyticsRoutes, initializeAIServices } = require('./routes/ai-analytics');
+
+// Initialize AI Analytics Services
+const predictiveEngine = new PredictiveAnalyticsEngine();
+const anomalySystem = new AnomalyDetectionSystem();
+initializeAIServices(predictiveEngine, anomalySystem);
 
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/budget', budgetRoutes);
@@ -92,6 +103,8 @@ app.use('/api/compliance', complianceRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/risk', riskRoutes);
 app.use('/api/chatbot', chatbotRoutes);
+app.use('/api/sanctions', sanctionsRoutes);
+app.use('/api/ai-analytics', aiAnalyticsRoutes);
 
 // AI Data Integration Routes
 app.post('/api/ai/process-request', async (req, res) => {
@@ -154,6 +167,43 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });
+});
+
+// Streaming status endpoint
+app.get('/api/streaming/status', (req, res) => {
+  try {
+    if (streamingSystem && streamingSystem.kafkaService) {
+      const kafkaStats = streamingSystem.kafkaService.getStreamingStats();
+      const dataStreamerStatus = streamingSystem.dataStreamer ? streamingSystem.dataStreamer.getStreamingStatus() : null;
+      
+      res.json({
+        kafka: kafkaStats,
+        dataStreamer: dataStreamerStatus,
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      // If streaming system is not initialized, return disconnected status
+      res.json({
+        kafka: {
+          isConnected: false,
+          simulationMode: false,
+          messagesProduced: 0,
+          messagesConsumed: 0,
+          errors: 0,
+          lastActivity: null
+        },
+        dataStreamer: null,
+        timestamp: new Date().toISOString()
+      });
+    }
+  } catch (error) {
+    console.error('Error getting streaming status:', error);
+    res.status(500).json({
+      error: 'Failed to get streaming status',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
 });
 
 // WebSocket
