@@ -1,0 +1,52 @@
+=== Frontend Logs (last 10 lines) ===
+[TAILING] Tailing last 10 lines for [frontend] process (change the value with --lines option)
+/Users/asif/.pm2/logs/frontend-error.log last 10 lines:
+0|frontend |  [2m761[0m |         {
+0|frontend |  [2m762[0m |           id: 'ana-lopez',
+0|frontend |  [2m763[0m |           name: 'Ana Lopez',
+0|frontend |      `----
+0|frontend | 
+0|frontend | Caused by:
+0|frontend |     Syntax Error
+0|frontend | 
+0|frontend | Import trace for requested module:
+0|frontend | ./app/svp/[id]/page.tsx
+
+/Users/asif/.pm2/logs/frontend-out.log last 10 lines:
+0|frontend |  GET /login 200 in 319ms
+0|frontend |  GET /login 200 in 18ms
+0|frontend |  GET /svp/vinod 200 in 47ms
+0|frontend |  GET /login 200 in 28ms
+0|frontend |  ✓ Compiled /_not-found in 289ms (1704 modules)
+0|frontend |  GET / 404 in 335ms
+0|frontend |  GET / 404 in 52ms
+0|frontend |  GET / 404 in 56ms
+0|frontend |  GET / 404 in 53ms
+0|frontend |  GET / 404 in 56ms
+
+
+=== Backend Logs (last 10 lines) ===
+[TAILING] Tailing last 10 lines for [backend] process (change the value with --lines option)
+/Users/asif/.pm2/logs/backend-error.log last 10 lines:
+1|backend  | o seed broker, trying another broker from the list: Connection timeout","retryCount":1,"retryTime":656}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-12T08:19:06.528Z","logger":"kafkajs","message":"[Connection] Connection timeout","broker":"145.223.79.90:9092","clientId":"sanctions-matcher"}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-12T08:19:06.528Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection timeout","retryCount":2,"retryTime":1228}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-12T08:19:08.758Z","logger":"kafkajs","message":"[Connection] Connection timeout","broker":"145.223.79.90:9092","clientId":"sanctions-matcher"}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-12T08:19:08.759Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection timeout","retryCount":3,"retryTime":2410}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-12T08:19:12.172Z","logger":"kafkajs","message":"[Connection] Connection timeout","broker":"145.223.79.90:9092","clientId":"sanctions-matcher"}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-12T08:19:12.172Z","logger":"kafkajs","message":"[BrokerPool] Failed to connect to seed broker, trying another broker from the list: Connection timeout","retryCount":4,"retryTime":5662}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-12T08:19:14.758Z","logger":"kafkajs","message":"[Connection] Connection error: connect ETIMEDOUT 145.223.79.90:9092","broker":"145.223.79.90:9092","clientId":"sanctions-matcher","stack":"Error: connect ETIMEDOUT 145.223.79.90:9092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"}
+1|backend  | {"level":"ERROR","timestamp":"2025-07-12T08:19:16.035Z","logger":"kafkajs","message":"[Connection] Connection error: connect ETIMEDOUT 145.223.79.90:9092","broker":"145.223.79.90:9092","clientId":"sanctions-matcher","stack":"Error: connect ETIMEDOUT 145.223.79.90:9092\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)"}
+
+/Users/asif/.pm2/logs/backend-out.log last 10 lines:
+1|backend  |   source_system: 'VPS_FINANCIAL_CORE',
+1|backend  |   region: 'LATAM',
+1|backend  |   vps_source: 'VPS-DataStreamer',
+1|backend  |   stream_priority: 'MEDIUM',
+1|backend  |   timestamp: '2025-07-12T08:19:16.631Z',
+1|backend  |   source: 'citi-dashboard'
+1|backend  | }
+1|backend  | 💳 Transaction processed: { id: undefined, amount: 197882.89, type: 'BUDGET_ALLOCATION' }
+1|backend  | 📈 Transaction analytics updated
+1|backend  | 📡 Broadcasted transaction-stream update to WebSocket clients
+

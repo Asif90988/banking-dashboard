@@ -26,6 +26,8 @@ import SanctionsTicker from '../../../components/SanctionsTicker';
 import ConnectionDropdown from '../../../components/ConnectionDropdown';
 import NotificationDropdown from '../../../components/NotificationDropdown';
 import ProjectCreationWizard from '../../../components/projects/ProjectCreationWizard';
+import VinodBudgetDashboard from '../../../components/VinodBudgetDashboard';
+import VinodComplianceDashboard from '../../../components/VinodComplianceDashboard';
 
 interface SVPData {
   user: {
@@ -3487,21 +3489,11 @@ function ProjectsDashboard({ svpData }: { svpData: SVPData }) {
 }
 
 function BudgetDashboard({ svpData }: { svpData: SVPData }) {
-  return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold text-white mb-6">Budget Management</h2>
-      <p className="text-gray-400">Budget analytics interface coming soon...</p>
-    </div>
-  );
+  return <VinodBudgetDashboard />;
 }
 
 function ComplianceDashboard({ svpData }: { svpData: SVPData }) {
-  return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold text-white mb-6">Compliance Tracking</h2>
-      <p className="text-gray-400">Compliance monitoring interface coming soon...</p>
-    </div>
-  );
+  return <VinodComplianceDashboard />;
 }
 
 // VP Detail View Component
@@ -5058,7 +5050,7 @@ function ProjectAnalyticsView({ projects }: { projects: any[] }) {
                 }`}></div>
                 <span className="text-white">{status}</span>
               </div>
-              <span className="text-gray-400">{count} projects</span>
+              <span className="text-gray-400">{String(count)} projects</span>
             </div>
           ))}
         </div>
@@ -5079,7 +5071,7 @@ function ProjectAnalyticsView({ projects }: { projects: any[] }) {
                 }`}></div>
                 <span className="text-white">{priority}</span>
               </div>
-              <span className="text-gray-400">{count} projects</span>
+              <span className="text-gray-400">{String(count)} projects</span>
             </div>
           ))}
         </div>
