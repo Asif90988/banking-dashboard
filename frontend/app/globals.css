@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* Optional: Apply base font and background for dark mode */
+body {
+  @apply bg-gray-950 text-white font-sans;
+}
