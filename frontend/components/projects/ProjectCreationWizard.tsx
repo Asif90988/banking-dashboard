@@ -93,6 +93,16 @@ const projectCategories = [
 
 const projectTemplates = [
   {
+    id: 'blank-custom',
+    name: 'Blank Custom Project',
+    category: '',
+    description: 'Start from scratch with a completely custom project',
+    estimatedDuration: '',
+    budgetRange: { min: 100000, max: 1000000, preferred: 500000 },
+    teamSize: 5,
+    skills: []
+  },
+  {
     id: 'regulatory-audit',
     name: 'Quarterly Regulatory Audit',
     category: 'regulatory',
@@ -212,6 +222,9 @@ export default function ProjectCreationWizard({ isOpen, onClose, onProjectCreate
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [createdProject, setCreatedProject] = useState<any>(null);
+
   const handleSubmit = async () => {
     if (!validateStep(currentStep)) return;
 
@@ -232,18 +245,30 @@ export default function ProjectCreationWizard({ isOpen, onClose, onProjectCreate
         spent: 0
       };
 
-      onProjectCreated(newProject);
-      onClose();
+      setCreatedProject(newProject);
+      setShowSuccess(true);
       
-      // Reset form
-      setFormData(initialFormData);
-      setCurrentStep(1);
-      setSelectedTemplate(null);
+      // Call the callback after a delay to show success screen
+      setTimeout(() => {
+        onProjectCreated(newProject);
+      }, 3000);
+      
     } catch (error) {
       console.error('Error creating project:', error);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleCloseSuccess = () => {
+    setShowSuccess(false);
+    onClose();
+    
+    // Reset form
+    setFormData(initialFormData);
+    setCurrentStep(1);
+    setSelectedTemplate(null);
+    setCreatedProject(null);
   };
 
   const renderStepIndicator = () => (
@@ -873,25 +898,121 @@ export default function ProjectCreationWizard({ isOpen, onClose, onProjectCreate
     </motion.div>
   );
 
+  const renderSuccessScreen = () => (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="text-center py-12"
+    >
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+        className="w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6"
+      >
+        <CheckIcon className="h-12 w-12 text-white" />
+      </motion.div>
+
+      <motion.h3
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="text-3xl font-bold text-white mb-4"
+      >
+        Project Created Successfully!
+      </motion.h3>
+
+      <motion.p
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="text-gray-400 text-lg mb-8"
+      >
+        Your project "{createdProject?.name}" has been created and assigned to{' '}
+        {vpTeams.find(vp => vp.id === createdProject?.assignedVP)?.name}.
+      </motion.p>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        className="bg-white/5 rounded-xl p-6 border border-white/10 mb-8 max-w-2xl mx-auto"
+      >
+        <h4 className="text-white font-semibold mb-4">Project Details</h4>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-gray-400">Project ID</p>
+            <p className="text-white font-medium">{createdProject?.id}</p>
+          </div>
+          <div>
+            <p className="text-gray-400">Status</p>
+            <p className="text-yellow-400 font-medium">{createdProject?.status}</p>
+          </div>
+          <div>
+            <p className="text-gray-400">Budget</p>
+            <p className="text-white font-medium">{formatCurrency(createdProject?.budgetRange?.preferred || 0)}</p>
+          </div>
+          <div>
+            <p className="text-gray-400">Created By</p>
+            <p className="text-white font-medium">{createdProject?.createdBy}</p>
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.0 }}
+        className="space-y-4"
+      >
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mb-6">
+          <div className="flex items-center space-x-2 mb-2">
+            <ClockIcon className="h-5 w-5 text-blue-400" />
+            <span className="text-blue-400 font-medium">Next Steps</span>
+          </div>
+          <ul className="text-gray-300 text-sm space-y-1">
+            <li>• The assigned VP will receive a notification to complete project setup</li>
+            <li>• Project will appear in the dashboard once VP completes their section</li>
+            <li>• You'll receive updates on project progress via email and dashboard notifications</li>
+          </ul>
+        </div>
+
+        <div className="flex items-center justify-center space-x-4">
+          <button
+            onClick={handleCloseSuccess}
+            className="px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-medium rounded-xl transition-all duration-300 flex items-center space-x-2"
+          >
+            <CheckIcon className="h-5 w-5" />
+            <span>Continue to Dashboard</span>
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9 }}
-          className="bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 rounded-2xl border border-white/20 w-full max-w-4xl max-h-[90vh] overflow-hidden"
+          className="bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 rounded-2xl border border-white/20 w-full max-w-5xl my-8 min-h-fit"
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div className="flex items-center justify-between p-6 border-b border-white/10 flex-shrink-0">
             <div>
-              <h2 className="text-2xl font-bold text-white">Create New Project</h2>
-              <p className="text-gray-400">Executive project creation wizard</p>
+              <h2 className="text-2xl font-bold text-white">
+                {showSuccess ? 'Project Created!' : 'Create New Project'}
+              </h2>
+              <p className="text-gray-400">
+                {showSuccess ? 'Your project has been successfully created' : 'Executive project creation wizard'}
+              </p>
             </div>
             <button
-              onClick={onClose}
+              onClick={showSuccess ? handleCloseSuccess : onClose}
               className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-300"
             >
               <XMarkIcon className="h-6 w-6 text-gray-300" />
@@ -899,62 +1020,70 @@ export default function ProjectCreationWizard({ isOpen, onClose, onProjectCreate
           </div>
 
           {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
-            {renderStepIndicator()}
-            
-            <AnimatePresence mode="wait">
-              {currentStep === 1 && renderStep1()}
-              {currentStep === 2 && renderStep2()}
-              {currentStep === 3 && renderStep3()}
-              {currentStep === 4 && renderStep4()}
-            </AnimatePresence>
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between p-6 border-t border-white/10">
-            <button
-              onClick={handlePrevious}
-              disabled={currentStep === 1}
-              className="flex items-center space-x-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-gray-300 font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ArrowLeftIcon className="h-4 w-4" />
-              <span>Previous</span>
-            </button>
-
-            <div className="flex items-center space-x-2">
-              <span className="text-gray-400 text-sm">
-                Step {currentStep} of {totalSteps}
-              </span>
-            </div>
-
-            {currentStep < totalSteps ? (
-              <button
-                onClick={handleNext}
-                className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 rounded-lg text-white font-medium transition-all duration-300"
-              >
-                <span>Next</span>
-                <ArrowRightIcon className="h-4 w-4" />
-              </button>
+          <div className="p-6 min-h-[500px]">
+            {showSuccess ? (
+              renderSuccessScreen()
             ) : (
-              <button
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-                className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 rounded-lg text-white font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Creating Project...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckIcon className="h-4 w-4" />
-                    <span>Create Project</span>
-                  </>
-                )}
-              </button>
+              <>
+                {renderStepIndicator()}
+                
+                <AnimatePresence mode="wait">
+                  {currentStep === 1 && renderStep1()}
+                  {currentStep === 2 && renderStep2()}
+                  {currentStep === 3 && renderStep3()}
+                  {currentStep === 4 && renderStep4()}
+                </AnimatePresence>
+              </>
             )}
           </div>
+
+          {/* Footer - Only show for wizard steps, not success screen */}
+          {!showSuccess && (
+            <div className="flex items-center justify-between p-6 border-t border-white/10 flex-shrink-0">
+              <button
+                onClick={handlePrevious}
+                disabled={currentStep === 1}
+                className="flex items-center space-x-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-gray-300 font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                <span>Previous</span>
+              </button>
+
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-400 text-sm">
+                  Step {currentStep} of {totalSteps}
+                </span>
+              </div>
+
+              {currentStep < totalSteps ? (
+                <button
+                  onClick={handleNext}
+                  className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 rounded-lg text-white font-medium transition-all duration-300"
+                >
+                  <span>Next</span>
+                  <ArrowRightIcon className="h-4 w-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="flex items-center space-x-2 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-400 hover:to-purple-500 rounded-lg text-white font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Creating Project...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckIcon className="h-4 w-4" />
+                      <span>Create Project</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>

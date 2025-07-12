@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useSocket } from '@/hooks/useSocket';
@@ -25,6 +25,7 @@ import ARIATicker from '../../../components/ARIATicker';
 import SanctionsTicker from '../../../components/SanctionsTicker';
 import ConnectionDropdown from '../../../components/ConnectionDropdown';
 import NotificationDropdown from '../../../components/NotificationDropdown';
+import ProjectCreationWizard from '../../../components/projects/ProjectCreationWizard';
 
 interface SVPData {
   user: {
@@ -2892,6 +2893,7 @@ function ProjectsDashboard({ svpData }: { svpData: SVPData }) {
   const [selectedView, setSelectedView] = useState<'overview' | 'kanban' | 'timeline' | 'analytics' | 'chat'>('overview');
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [showProjectDetail, setShowProjectDetail] = useState(false);
+  const [showProjectCreation, setShowProjectCreation] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -3317,27 +3319,40 @@ function ProjectsDashboard({ svpData }: { svpData: SVPData }) {
         </div>
 
         {/* View Selector */}
-        <div className="flex items-center space-x-2 mb-4">
-          {[
-            { id: 'overview', name: 'Overview', icon: '📊' },
-            { id: 'kanban', name: 'Kanban', icon: '📋' },
-            { id: 'timeline', name: 'Timeline', icon: '📅' },
-            { id: 'analytics', name: 'Analytics', icon: '📈' },
-            { id: 'chat', name: 'AI Chat', icon: '💬' }
-          ].map((view) => (
-            <button
-              key={view.id}
-              onClick={() => setSelectedView(view.id as any)}
-              className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300 flex items-center space-x-2 ${
-                selectedView === view.id
-                  ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-white shadow-lg'
-                  : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10'
-              }`}
-            >
-              <span>{view.icon}</span>
-              <span>{view.name}</span>
-            </button>
-          ))}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            {[
+              { id: 'overview', name: 'Overview', icon: '📊' },
+              { id: 'kanban', name: 'Kanban', icon: '📋' },
+              { id: 'timeline', name: 'Timeline', icon: '📅' },
+              { id: 'analytics', name: 'Analytics', icon: '📈' },
+              { id: 'chat', name: 'AI Chat', icon: '💬' }
+            ].map((view) => (
+              <button
+                key={view.id}
+                onClick={() => setSelectedView(view.id as any)}
+                className={`px-4 py-2 rounded-xl font-medium text-sm transition-all duration-300 flex items-center space-x-2 ${
+                  selectedView === view.id
+                    ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-white shadow-lg'
+                    : 'bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white border border-white/10'
+                }`}
+              >
+                <span>{view.icon}</span>
+                <span>{view.name}</span>
+              </button>
+            ))}
+          </div>
+          
+          {/* Create New Project Button */}
+          <button
+            onClick={() => setShowProjectCreation(true)}
+            className="px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-medium text-sm rounded-xl transition-all duration-300 flex items-center space-x-2 shadow-lg hover:shadow-green-500/25"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Create New Project</span>
+          </button>
         </div>
 
         {/* Filters and Search */}
@@ -3384,6 +3399,89 @@ function ProjectsDashboard({ svpData }: { svpData: SVPData }) {
         {selectedView === 'analytics' && <ProjectAnalyticsView projects={filteredProjects} />}
         {selectedView === 'chat' && <ProjectChatView projects={filteredProjects} />}
       </div>
+
+      {/* Project Creation Wizard Modal */}
+      <ProjectCreationWizard
+        isOpen={showProjectCreation}
+        onClose={() => setShowProjectCreation(false)}
+        onProjectCreated={(project) => {
+          console.log('New project created:', project);
+          setShowProjectCreation(false);
+          // Here you would typically refresh the projects list
+        }}
+        vpTeams={[
+          {
+            id: 'sarah-chen',
+            name: 'Sarah Chen',
+            title: 'VP Regulatory Affairs',
+            department: 'Regulatory Affairs',
+            avatar: 'SC',
+            color: 'from-blue-500 to-cyan-600',
+            activeProjects: 3,
+            budgetUtilization: 82.1
+          },
+          {
+            id: 'miguel-santos',
+            name: 'Miguel Santos',
+            title: 'VP Risk Management',
+            department: 'Risk Management',
+            avatar: 'MS',
+            color: 'from-red-500 to-pink-600',
+            activeProjects: 4,
+            budgetUtilization: 75.3
+          },
+          {
+            id: 'priya-patel',
+            name: 'Priya Patel',
+            title: 'VP Internal Audit',
+            department: 'Internal Audit',
+            avatar: 'PP',
+            color: 'from-purple-500 to-indigo-600',
+            activeProjects: 2,
+            budgetUtilization: 91.2
+          },
+          {
+            id: 'carlos-rodriguez',
+            name: 'Carlos Rodriguez',
+            title: 'VP AML Operations',
+            department: 'AML Operations',
+            avatar: 'CR',
+            color: 'from-orange-500 to-red-600',
+            activeProjects: 4,
+            budgetUtilization: 68.9
+          },
+          {
+            id: 'lisa-wong',
+            name: 'Lisa Wong',
+            title: 'VP Policy Management',
+            department: 'Policy Management',
+            avatar: 'LW',
+            color: 'from-green-500 to-teal-600',
+            activeProjects: 3,
+            budgetUtilization: 84.7
+          },
+          {
+            id: 'david-kim',
+            name: 'David Kim',
+            title: 'VP Operational Risk',
+            department: 'Operational Risk',
+            avatar: 'DK',
+            color: 'from-indigo-500 to-purple-600',
+            activeProjects: 3,
+            budgetUtilization: 79.4
+          },
+          {
+            id: 'maria-gonzalez',
+            name: 'Maria Gonzalez',
+            title: 'VP Regulatory Technology',
+            department: 'RegTech',
+            avatar: 'MG',
+            color: 'from-cyan-500 to-blue-600',
+            activeProjects: 4,
+            budgetUtilization: 86.3
+          }
+        ]}
+      />
     </div>
   );
 }
@@ -5191,7 +5289,7 @@ function PersonalizedARIATicker({ svpData }: { svpData: SVPData }) {
   ];
 
   // Create continuous stream with unique keys
-  const continuousStream = personalizedMessages.map((msg, index) => {
+  const continuousStream: ReactNode[] = personalizedMessages.map((msg, index) => {
     const IconComponent = msg.icon;
     return (
       <div key={`msg-${index}`} className={`flex items-center space-x-3 mx-12 ${
@@ -5209,7 +5307,7 @@ function PersonalizedARIATicker({ svpData }: { svpData: SVPData }) {
   });
 
   // Create second copy with different keys
-  const continuousStreamCopy = personalizedMessages.map((msg, index) => {
+  const continuousStreamCopy: ReactNode[] = personalizedMessages.map((msg, index) => {
     const IconComponent = msg.icon;
     return (
       <div key={`msg-copy-${index}`} className={`flex items-center space-x-3 mx-12 ${

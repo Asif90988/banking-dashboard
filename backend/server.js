@@ -81,6 +81,7 @@ const activityRoutes = require('./routes/activities');
 const riskRoutes = require('./routes/risk');
 const chatbotRoutes = require('./routes/chatbot');
 const sanctionsRoutes = require('./routes/sanctions');
+const projectCreationRoutes = require('./routes/project-creation');
 
 // AI Data Integration Service
 const AIDataIntegrationService = require('./services/aiDataIntegration');
@@ -105,6 +106,7 @@ app.use('/api/risk', riskRoutes);
 app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/sanctions', sanctionsRoutes);
 app.use('/api/ai-analytics', aiAnalyticsRoutes);
+app.use('/api/project-creation', projectCreationRoutes);
 
 // AI Data Integration Routes
 app.post('/api/ai/process-request', async (req, res) => {
