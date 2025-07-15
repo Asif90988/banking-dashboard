@@ -1,0 +1,216 @@
+# Template Configuration for New Industries
+# Copy this file and customize for your specific industry
+
+metadata:
+  name: "Industry Template"
+  industry: "template"
+  version: "1.0.0"
+  description: "Base template for creating new industry dashboards"
+  author: "Dashboard Template Team"
+  created: "2025-01-12"
+
+dashboard:
+  title: "Industry Operations Dashboard"
+  subtitle: "Real-time analytics and insights"
+  layout:
+    type: "grid"
+    columns: 12
+    rows: "auto"
+    gap: 16
+  
+  navigation:
+    - { id: "overview", label: "Overview", icon: "dashboard", path: "/" }
+    - { id: "analytics", label: "Analytics", icon: "chart", path: "/analytics" }
+    - { id: "reports", label: "Reports", icon: "document", path: "/reports" }
+    - { id: "settings", label: "Settings", icon: "cog", path: "/settings" }
+  
+  sections:
+    - id: "key-metrics"
+      component: "MetricCards"
+      title: "Key Performance Indicators"
+      position: { row: 1, col: 1, span: 12 }
+      dataSource: "primary-metrics"
+      config:
+        layout: "horizontal"
+        cardCount: 4
+        
+    - id: "trend-analysis"
+      component: "TrendChart"
+      title: "Performance Trends"
+      position: { row: 2, col: 1, span: 8 }
+      dataSource: "trend-data"
+      config:
+        chartType: "line"
+        timeRange: "24h"
+        
+    - id: "status-overview"
+      component: "StatusTable"
+      title: "Current Status"
+      position: { row: 2, col: 9, span: 4 }
+      dataSource: "status-data"
+      config:
+        maxRows: 10
+        refreshInterval: 30000
+
+dataSources:
+  primary-metrics:
+    type: "database"
+    connection: "${DATABASE_URL}"
+    table: "metrics"
+    query: "SELECT * FROM metrics WHERE date >= NOW() - INTERVAL '1 day'"
+    refreshInterval: 60000  # 1 minute
+    
+  trend-data:
+    type: "api"
+    endpoint: "${API_BASE}/trends"
+    method: "GET"
+    headers:
+      Authorization: "Bearer ${API_TOKEN}"
+    refreshInterval: 300000  # 5 minutes
+    
+  status-data:
+    type: "websocket"
+    url: "${WS_URL}/status"
+    topics: ["status-updates", "alerts"]
+    realTime: true
+
+businessRules:
+  calculations:
+    - name: "efficiency-rate"
+      formula: "(completed_tasks / total_tasks) * 100"
+      format: "percentage"
+      
+    - name: "growth-rate"
+      formula: "((current_value - previous_value) / previous_value) * 100"
+      format: "percentage"
+      
+  validations:
+    - field: "efficiency_rate"
+      rules: ["required", "numeric", "min:0", "max:100"]
+      
+  alerts:
+    - name: "low-efficiency"
+      condition: "efficiency_rate < 70"
+      severity: "warning"
+      message: "Efficiency below target threshold"
+      
+    - name: "critical-status"
+      condition: "status == 'critical'"
+      severity: "critical"
+      message: "Critical status detected"
+      actions: ["notify", "escalate"]
+
+theme:
+  colors:
+    primary: "#3b82f6"      # Blue
+    secondary: "#10b981"    # Green
+    accent: "#f59e0b"       # Amber
+    background: "#f8fafc"   # Light gray
+    surface: "#ffffff"      # White
+    text: "#1f2937"         # Dark gray
+    textSecondary: "#6b7280" # Medium gray
+    border: "#e5e7eb"       # Light border
+    warning: "#f59e0b"      # Amber
+    danger: "#ef4444"       # Red
+    success: "#10b981"      # Green
+    info: "#3b82f6"         # Blue
+    
+  typography:
+    fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+    fontSize:
+      xs: "0.75rem"
+      sm: "0.875rem"
+      base: "1rem"
+      lg: "1.125rem"
+      xl: "1.25rem"
+      "2xl": "1.5rem"
+      "3xl": "1.875rem"
+      
+  spacing:
+    unit: 4
+    xs: "0.25rem"
+    sm: "0.5rem"
+    md: "1rem"
+    lg: "1.5rem"
+    xl: "2rem"
+    "2xl": "3rem"
+    
+  borderRadius:
+    sm: "0.25rem"
+    md: "0.375rem"
+    lg: "0.5rem"
+    xl: "0.75rem"
+
+integrations:
+  apis:
+    - name: "primary-api"
+      baseUrl: "${API_BASE}"
+      authentication:
+        type: "bearer"
+        token: "${API_TOKEN}"
+      rateLimit:
+        requests: 1000
+        window: "1h"
+        
+  webhooks:
+    - name: "status-updates"
+      url: "${WEBHOOK_URL}/status"
+      events: ["status.changed", "alert.triggered"]
+      
+  exports:
+    - name: "daily-report"
+      format: "pdf"
+      schedule: "0 9 * * *"  # Daily at 9 AM
+      template: "daily-summary"
+      
+    - name: "data-export"
+      format: "csv"
+      schedule: "0 0 * * 0"  # Weekly on Sunday
+      data: ["metrics", "trends"]
+
+features:
+  realTime: true
+  notifications: true
+  exports: true
+  multiUser: true
+  audit: true
+  
+security:
+  authentication:
+    required: true
+    methods: ["oauth", "saml"]
+    
+  authorization:
+    rbac: true
+    permissions: ["read", "write", "admin"]
+    
+  encryption:
+    inTransit: true
+    atRest: true
+
+monitoring:
+  healthChecks:
+    - endpoint: "/health"
+      interval: 30000
+      
+  metrics:
+    - "response_time"
+    - "error_rate"
+    - "active_users"
+    
+  logging:
+    level: "info"
+    format: "json"
+    retention: "30d"
+
+deployment:
+  environment: "production"
+  scaling:
+    minInstances: 2
+    maxInstances: 10
+    targetCPU: 70
+    
+  resources:
+    cpu: "500m"
+    memory: "512Mi"
+    storage: "10Gi"

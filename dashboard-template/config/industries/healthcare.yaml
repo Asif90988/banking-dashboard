@@ -1,0 +1,428 @@
+# Healthcare Industry Dashboard Configuration
+# Hospital and clinic management dashboard
+
+metadata:
+  name: "Healthcare Operations Dashboard"
+  industry: "healthcare"
+  version: "1.0.0"
+  description: "Comprehensive hospital and clinic management dashboard"
+  author: "Healthcare Analytics Team"
+  created: "2025-01-12"
+  tags: ["healthcare", "hospital", "patient-care", "medical"]
+
+dashboard:
+  title: "Healthcare Operations Center"
+  subtitle: "Real-time patient care and hospital management"
+  layout:
+    type: "grid"
+    columns: 12
+    rows: "auto"
+    gap: 16
+  
+  navigation:
+    - { id: "overview", label: "Overview", icon: "activity", path: "/" }
+    - { id: "patients", label: "Patient Flow", icon: "users", path: "/patients" }
+    - { id: "beds", label: "Bed Management", icon: "bed", path: "/beds" }
+    - { id: "staff", label: "Staff", icon: "user-check", path: "/staff" }
+    - { id: "emergency", label: "Emergency", icon: "alert-triangle", path: "/emergency" }
+    - { id: "reports", label: "Reports", icon: "file-text", path: "/reports" }
+  
+  sections:
+    - id: "patient-metrics"
+      component: "PatientFlowMetrics"
+      title: "Patient Flow Overview"
+      position: { row: 1, col: 1, span: 6 }
+      dataSource: "patient-flow"
+      config:
+        metrics: ["admissions_today", "discharges_today", "current_census", "avg_los"]
+        
+    - id: "bed-occupancy"
+      component: "BedOccupancyChart"
+      title: "Bed Occupancy Rate"
+      position: { row: 1, col: 7, span: 6 }
+      dataSource: "bed-data"
+      config:
+        chartType: "gauge"
+        threshold: { warning: 85, critical: 95 }
+        
+    - id: "emergency-status"
+      component: "EmergencyDashboard"
+      title: "Emergency Department"
+      position: { row: 2, col: 1, span: 4 }
+      dataSource: "emergency-data"
+      config:
+        showWaitTimes: true
+        showTriage: true
+        
+    - id: "staff-utilization"
+      component: "StaffMetrics"
+      title: "Staff Utilization"
+      position: { row: 2, col: 5, span: 4 }
+      dataSource: "staff-data"
+      config:
+        departments: ["nursing", "physicians", "support"]
+        
+    - id: "quality-indicators"
+      component: "QualityMetrics"
+      title: "Quality Indicators"
+      position: { row: 2, col: 9, span: 4 }
+      dataSource: "quality-data"
+      config:
+        indicators: ["infection_rate", "readmission_rate", "mortality_rate"]
+        
+    - id: "patient-satisfaction"
+      component: "SatisfactionChart"
+      title: "Patient Satisfaction Trends"
+      position: { row: 3, col: 1, span: 8 }
+      dataSource: "satisfaction-data"
+      config:
+        chartType: "line"
+        timeRange: "30d"
+        
+    - id: "alerts-panel"
+      component: "AlertsPanel"
+      title: "Active Alerts"
+      position: { row: 3, col: 9, span: 4 }
+      dataSource: "alerts-data"
+      config:
+        maxAlerts: 10
+        autoRefresh: true
+
+dataSources:
+  patient-flow:
+    type: "database"
+    connection: "${HOSPITAL_DB_URL}"
+    table: "patient_admissions"
+    query: |
+      SELECT 
+        COUNT(CASE WHEN admission_date::date = CURRENT_DATE THEN 1 END) as admissions_today,
+        COUNT(CASE WHEN discharge_date::date = CURRENT_DATE THEN 1 END) as discharges_today,
+        COUNT(CASE WHEN discharge_date IS NULL THEN 1 END) as current_census,
+        AVG(EXTRACT(days FROM (COALESCE(discharge_date, NOW()) - admission_date))) as avg_los
+      FROM patient_admissions 
+      WHERE admission_date >= CURRENT_DATE - INTERVAL '30 days'
+    refreshInterval: 300000  # 5 minutes
+    
+  bed-data:
+    type: "api"
+    endpoint: "${HOSPITAL_API}/beds/occupancy"
+    method: "GET"
+    headers:
+      Authorization: "Bearer ${HOSPITAL_API_TOKEN}"
+      Content-Type: "application/json"
+    refreshInterval: 180000  # 3 minutes
+    
+  emergency-data:
+    type: "websocket"
+    url: "${HOSPITAL_WS}/emergency"
+    topics: ["ed-arrivals", "triage-updates", "discharge-ready"]
+    realTime: true
+    
+  staff-data:
+    type: "database"
+    connection: "${HR_DB_URL}"
+    table: "staff_schedules"
+    query: |
+      SELECT 
+        department,
+        COUNT(*) as scheduled_staff,
+        COUNT(CASE WHEN status = 'present' THEN 1 END) as present_staff,
+        COUNT(CASE WHEN status = 'present' THEN 1 END)::float / COUNT(*)::float * 100 as utilization_rate
+      FROM staff_schedules s
+      JOIN staff_status st ON s.staff_id = st.staff_id
+      WHERE shift_date = CURRENT_DATE
+      GROUP BY department
+    refreshInterval: 600000  # 10 minutes
+    
+  quality-data:
+    type: "api"
+    endpoint: "${QUALITY_API}/indicators"
+    method: "GET"
+    headers:
+      Authorization: "Bearer ${QUALITY_API_TOKEN}"
+    refreshInterval: 3600000  # 1 hour
+    
+  satisfaction-data:
+    type: "database"
+    connection: "${SURVEY_DB_URL}"
+    table: "patient_surveys"
+    query: |
+      SELECT 
+        DATE(survey_date) as date,
+        AVG(overall_satisfaction) as satisfaction_score,
+        COUNT(*) as response_count
+      FROM patient_surveys 
+      WHERE survey_date >= CURRENT_DATE - INTERVAL '30 days'
+      GROUP BY DATE(survey_date)
+      ORDER BY date
+    refreshInterval: 1800000  # 30 minutes
+    
+  alerts-data:
+    type: "kafka"
+    brokers: ["${KAFKA_BROKER}"]
+    topics: ["hospital-alerts", "patient-alerts", "system-alerts"]
+    consumerGroup: "healthcare-dashboard"
+    realTime: true
+
+businessRules:
+  calculations:
+    - name: "bed-occupancy-rate"
+      formula: "(occupied_beds / total_beds) * 100"
+      format: "percentage"
+      
+    - name: "patient-turnover"
+      formula: "(admissions + discharges) / 2"
+      format: "number"
+      
+    - name: "average-wait-time"
+      formula: "SUM(wait_time_minutes) / COUNT(patients)"
+      format: "minutes"
+      
+    - name: "staff-to-patient-ratio"
+      formula: "present_staff / current_census"
+      format: "ratio"
+      
+  validations:
+    - field: "bed_occupancy_rate"
+      rules: ["required", "numeric", "min:0", "max:100"]
+      
+    - field: "patient_satisfaction"
+      rules: ["required", "numeric", "min:1", "max:5"]
+      
+  alerts:
+    - name: "high-occupancy"
+      condition: "bed_occupancy_rate > 90"
+      severity: "warning"
+      message: "Hospital approaching capacity - consider diversion protocols"
+      actions: ["notify_admin", "update_status_board"]
+      
+    - name: "critical-occupancy"
+      condition: "bed_occupancy_rate > 95"
+      severity: "critical"
+      message: "Hospital at critical capacity - implement overflow protocols"
+      actions: ["notify_admin", "notify_ceo", "activate_overflow"]
+      
+    - name: "long-wait-time"
+      condition: "average_wait_time > 240"  # 4 hours
+      severity: "warning"
+      message: "Emergency department wait times exceeding target"
+      actions: ["notify_ed_manager"]
+      
+    - name: "low-satisfaction"
+      condition: "patient_satisfaction < 3.5"
+      severity: "warning"
+      message: "Patient satisfaction below acceptable threshold"
+      actions: ["notify_quality_team"]
+      
+    - name: "staffing-shortage"
+      condition: "staff_to_patient_ratio < 0.2"
+      severity: "critical"
+      message: "Critical staffing shortage detected"
+      actions: ["notify_nursing_supervisor", "activate_on_call"]
+
+theme:
+  colors:
+    primary: "#2563eb"      # Medical blue
+    secondary: "#059669"    # Health green
+    accent: "#7c3aed"       # Purple accent
+    background: "#f8fafc"   # Clean white background
+    surface: "#ffffff"      # Pure white surfaces
+    text: "#1f2937"         # Dark text
+    textSecondary: "#6b7280" # Secondary text
+    border: "#e5e7eb"       # Light borders
+    warning: "#f59e0b"      # Amber warning
+    danger: "#ef4444"       # Red for critical
+    success: "#10b981"      # Green for positive
+    info: "#3b82f6"         # Blue for information
+    
+    # Healthcare-specific colors
+    emergency: "#dc2626"    # Emergency red
+    stable: "#059669"       # Stable green
+    caution: "#f59e0b"      # Caution amber
+    
+  typography:
+    fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif"
+    fontSize:
+      xs: "0.75rem"
+      sm: "0.875rem"
+      base: "1rem"
+      lg: "1.125rem"
+      xl: "1.25rem"
+      "2xl": "1.5rem"
+      "3xl": "1.875rem"
+      
+  spacing:
+    unit: 4
+    xs: "0.25rem"
+    sm: "0.5rem"
+    md: "1rem"
+    lg: "1.5rem"
+    xl: "2rem"
+    "2xl": "3rem"
+
+integrations:
+  apis:
+    - name: "hospital-information-system"
+      baseUrl: "${HIS_API_BASE}"
+      authentication:
+        type: "oauth2"
+        clientId: "${HIS_CLIENT_ID}"
+        clientSecret: "${HIS_CLIENT_SECRET}"
+      rateLimit:
+        requests: 500
+        window: "1h"
+        
+    - name: "electronic-health-records"
+      baseUrl: "${EHR_API_BASE}"
+      authentication:
+        type: "bearer"
+        token: "${EHR_API_TOKEN}"
+      rateLimit:
+        requests: 1000
+        window: "1h"
+        
+  webhooks:
+    - name: "patient-status-updates"
+      url: "${WEBHOOK_URL}/patient-status"
+      events: ["admission", "discharge", "transfer", "emergency"]
+      
+    - name: "bed-status-updates"
+      url: "${WEBHOOK_URL}/bed-status"
+      events: ["bed.occupied", "bed.available", "bed.maintenance"]
+      
+  exports:
+    - name: "daily-census-report"
+      format: "pdf"
+      schedule: "0 6 * * *"  # Daily at 6 AM
+      template: "census-summary"
+      recipients: ["admin@hospital.com", "nursing@hospital.com"]
+      
+    - name: "quality-metrics-export"
+      format: "excel"
+      schedule: "0 0 1 * *"  # Monthly on 1st
+      data: ["quality-indicators", "patient-satisfaction"]
+      
+    - name: "regulatory-report"
+      format: "csv"
+      schedule: "0 0 * * 1"  # Weekly on Monday
+      data: ["patient-safety", "infection-control", "readmissions"]
+
+features:
+  realTime: true
+  notifications: true
+  exports: true
+  multiUser: true
+  audit: true
+  hipaaCompliant: true
+  
+security:
+  authentication:
+    required: true
+    methods: ["saml", "oauth2", "ldap"]
+    mfa: true
+    
+  authorization:
+    rbac: true
+    permissions: ["read", "write", "admin", "clinical", "quality"]
+    
+  encryption:
+    inTransit: true
+    atRest: true
+    
+  compliance:
+    hipaa: true
+    hitech: true
+    gdpr: true
+    
+  audit:
+    enabled: true
+    retention: "7y"  # 7 years for healthcare
+    events: ["login", "data_access", "export", "alert"]
+
+monitoring:
+  healthChecks:
+    - endpoint: "/health"
+      interval: 30000
+      
+    - endpoint: "/health/database"
+      interval: 60000
+      
+    - endpoint: "/health/integrations"
+      interval: 120000
+      
+  metrics:
+    - "response_time"
+    - "error_rate"
+    - "active_users"
+    - "data_freshness"
+    - "integration_status"
+    
+  logging:
+    level: "info"
+    format: "json"
+    retention: "90d"
+    pii: false  # No PII in logs for HIPAA compliance
+
+deployment:
+  environment: "production"
+  scaling:
+    minInstances: 3  # Higher for healthcare critical systems
+    maxInstances: 15
+    targetCPU: 60   # Lower threshold for healthcare
+    
+  resources:
+    cpu: "1000m"    # Higher resources for healthcare
+    memory: "1Gi"
+    storage: "50Gi"
+    
+  backup:
+    enabled: true
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    retention: "30d"
+    encryption: true
+    
+  disaster_recovery:
+    enabled: true
+    rpo: "1h"      # Recovery Point Objective
+    rto: "4h"      # Recovery Time Objective
+    backup_site: "${DR_SITE_URL}"
+
+notifications:
+  channels:
+    - type: "email"
+      recipients: ["admin@hospital.com", "it@hospital.com"]
+      events: ["critical_alerts", "system_errors"]
+      
+    - type: "sms"
+      recipients: ["+1234567890"]  # On-call number
+      events: ["critical_alerts"]
+      
+    - type: "slack"
+      webhook: "${SLACK_WEBHOOK_URL}"
+      channel: "#hospital-alerts"
+      events: ["all_alerts"]
+      
+    - type: "pager"
+      service: "pagerduty"
+      integration_key: "${PAGERDUTY_KEY}"
+      events: ["critical_alerts", "system_down"]
+
+customization:
+  branding:
+    logo: "${HOSPITAL_LOGO_URL}"
+    favicon: "${HOSPITAL_FAVICON_URL}"
+    hospitalName: "${HOSPITAL_NAME}"
+    
+  localization:
+    language: "en-US"
+    timezone: "${HOSPITAL_TIMEZONE}"
+    dateFormat: "MM/DD/YYYY"
+    timeFormat: "12h"
+    
+  departments:
+    - { id: "emergency", name: "Emergency Department", color: "#dc2626" }
+    - { id: "icu", name: "Intensive Care Unit", color: "#7c2d12" }
+    - { id: "surgery", name: "Surgery", color: "#1d4ed8" }
+    - { id: "cardiology", name: "Cardiology", color: "#be123c" }
+    - { id: "pediatrics", name: "Pediatrics", color: "#059669" }
+    - { id: "maternity", name: "Maternity", color: "#c2410c" }
