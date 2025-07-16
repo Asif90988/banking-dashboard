@@ -75,20 +75,20 @@ export default function BudgetAnalytics() {
         svpData.reduce((acc: BudgetBySVP[], current: BudgetBySVP) => {
           const existingIndex = acc.findIndex(svp => svp.name === current.name);
           if (existingIndex >= 0) {
-            acc[existingIndex].budget_allocated = parseFloat(acc[existingIndex].budget_allocated.toString()) + parseFloat(current.budget_allocated.toString());
-            acc[existingIndex].budget_spent = parseFloat(acc[existingIndex].budget_spent.toString()) + parseFloat(current.budget_spent.toString());
-            acc[existingIndex].remaining = parseFloat(acc[existingIndex].remaining.toString()) + parseFloat(current.remaining.toString());
+            acc[existingIndex].budget_allocated = parseFloat(acc[existingIndex].budget_allocated?.toString() || '0') + parseFloat(current.budget_allocated?.toString() || '0');
+            acc[existingIndex].budget_spent = parseFloat(acc[existingIndex].budget_spent?.toString() || '0') + parseFloat(current.budget_spent?.toString() || '0');
+            acc[existingIndex].remaining = parseFloat(acc[existingIndex].remaining?.toString() || '0') + parseFloat(current.remaining?.toString() || '0');
             acc[existingIndex].utilization_percentage = Math.round(
               (acc[existingIndex].budget_spent / acc[existingIndex].budget_allocated) * 100
             );
           } else {
             acc.push({ 
               ...current,
-              budget_allocated: parseFloat(current.budget_allocated.toString()),
-              budget_spent: parseFloat(current.budget_spent.toString()),
-              remaining: parseFloat(current.remaining.toString()),
+              budget_allocated: parseFloat(current.budget_allocated?.toString() || '0'),
+              budget_spent: parseFloat(current.budget_spent?.toString() || '0'),
+              remaining: parseFloat(current.remaining?.toString() || '0'),
               utilization_percentage: Math.round(
-                (parseFloat(current.budget_spent.toString()) / parseFloat(current.budget_allocated.toString())) * 100
+                (parseFloat(current.budget_spent?.toString() || '0') / parseFloat(current.budget_allocated?.toString() || '0')) * 100
               )
             });
           }
