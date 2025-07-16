@@ -97,8 +97,8 @@ export default function ProjectsAnalytics() {
   };
 
   const filteredProjects = projects.filter(project => {
-    const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.svp_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (project?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (project?.svp_name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = selectedFilter === 'all' || project.status === selectedFilter;
     return matchesSearch && matchesFilter;
   });
@@ -297,9 +297,9 @@ export default function ProjectsAnalytics() {
     }
   };
 
-  const totalBudget = projects.reduce((sum, p) => sum + (parseFloat(p.budget_allocated.toString()) || 0), 0);
-  const totalSpent = projects.reduce((sum, p) => sum + (parseFloat(p.budget_spent.toString()) || 0), 0);
-  const avgCompletion = projects.length > 0 ? projects.reduce((sum, p) => sum + (parseFloat(p.completion_percentage.toString()) || 0), 0) / projects.length : 0;
+  const totalBudget = projects.reduce((sum, p) => sum + (parseFloat(p?.budget_allocated?.toString() || '0') || 0), 0);
+  const totalSpent = projects.reduce((sum, p) => sum + (parseFloat(p?.budget_spent?.toString() || '0') || 0), 0);
+  const avgCompletion = projects.length > 0 ? projects.reduce((sum, p) => sum + (parseFloat(p?.completion_percentage?.toString() || '0') || 0), 0) / projects.length : 0;
 
   if (loading) {
     return (
