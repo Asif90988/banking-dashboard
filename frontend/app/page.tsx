@@ -90,8 +90,11 @@ export default function Dashboard() {
     try {
       setLoading(true)
       
+      // Environment-aware API base URL
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api';
+      
       // Fetch budget data
-      const budgetRes = await fetch('http://localhost:5050/api/budget/overview')
+      const budgetRes = await fetch(`${API_BASE}/budget/overview`)
       const rawBudgetData = budgetRes.ok ? await budgetRes.json() : null
       
       // Parse budget data to ensure numbers
@@ -103,23 +106,23 @@ export default function Dashboard() {
       } : null
       
       // Fetch SVP data for performance
-      const svpRes = await fetch('http://localhost:5050/api/budget/by-svp')
+      const svpRes = await fetch(`${API_BASE}/budget/by-svp`)
       const svpData = svpRes.ok ? await svpRes.json() : []
       
       // Fetch projects data
-      const projectsRes = await fetch('http://localhost:5050/api/projects')
+      const projectsRes = await fetch(`${API_BASE}/projects`)
       const projectsData = projectsRes.ok ? await projectsRes.json() : []
       
       // Fetch activities data
-      const activitiesRes = await fetch('http://localhost:5050/api/activities')
+      const activitiesRes = await fetch(`${API_BASE}/activities`)
       const activitiesData = activitiesRes.ok ? await activitiesRes.json() : []
       
       // Fetch compliance data
-      const complianceRes = await fetch('http://localhost:5050/api/compliance')
+      const complianceRes = await fetch(`${API_BASE}/compliance`)
       const complianceData = complianceRes.ok ? await complianceRes.json() : { data: [] }
       
       // Fetch risks data
-      const risksRes = await fetch('http://localhost:5050/api/risk')
+      const risksRes = await fetch(`${API_BASE}/risk`)
       const risksData = risksRes.ok ? await risksRes.json() : []
       
       // Process projects data for summary

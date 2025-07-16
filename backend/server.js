@@ -272,43 +272,89 @@ async function startServer() {
   }
 }
 
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('🛑 Received SIGTERM, shutting down gracefully...');
-  
-  if (streamingSystem) {
-    try {
-      await streamingSystem.dataStreamer.stopProductionStreaming();
-      await streamingSystem.kafkaService.disconnect();
-      console.log('✅ Streaming system shut down');
-    } catch (error) {
-      console.error('❌ Error shutting down streaming system:', error);
-    }
+// Improved graceful shutdown handling
+let isShuttingDown = false;
+
+async function gracefulShutdown(signal) {
+  if (isShuttingDown) {
+    console.log('⚠️ Shutdown already in progress...');
+    return;
   }
   
-  server.close(() => {
-    console.log('✅ Main server closed');
-    process.exit(0);
-  });
+  isShuttingDown = true;
+  console.log(`🛑 Received ${signal}, shutting down gracefully...`);
+  
+  // Set a timeout to force exit if shutdown takes too long
+  const forceExitTimeout = setTimeout(() => {
+    console.log('⚠️ Force exiting due to shutdown timeout');
+    process.exit(1);
+  }, 15000);
+  
+  try {
+    // Close database connections
+    if (pool) {
+      console.log('🔌 Closing database connections...');
+      await pool.end();
+      console.log('✅ Database connections closed');
+    }
+    
+    // Shutdown streaming system
+    if (streamingSystem) {
+      console.log('📡 Shutting down streaming system...');
+      try {
+        if (streamingSystem.dataStreamer) {
+          await streamingSystem.dataStreamer.stopProductionStreaming();
+        }
+        if (streamingSystem.kafkaService) {
+          await streamingSystem.kafkaService.disconnect();
+        }
+        if (streamingSystem.streamingServer) {
+          streamingSystem.streamingServer.close();
+        }
+        console.log('✅ Streaming system shut down');
+      } catch (error) {
+        console.error('❌ Error shutting down streaming system:', error);
+      }
+    }
+    
+    // Close WebSocket connections
+    if (io) {
+      console.log('🔌 Closing WebSocket connections...');
+      io.close();
+      console.log('✅ WebSocket connections closed');
+    }
+    
+    // Close main server
+    server.close((err) => {
+      clearTimeout(forceExitTimeout);
+      if (err) {
+        console.error('❌ Error closing server:', err);
+        process.exit(1);
+      } else {
+        console.log('✅ Main server closed');
+        process.exit(0);
+      }
+    });
+    
+  } catch (error) {
+    clearTimeout(forceExitTimeout);
+    console.error('❌ Error during shutdown:', error);
+    process.exit(1);
+  }
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle uncaught exceptions and unhandled rejections
+process.on('uncaughtException', (error) => {
+  console.error('❌ Uncaught Exception:', error);
+  gracefulShutdown('uncaughtException');
 });
 
-process.on('SIGINT', async () => {
-  console.log('🛑 Received SIGINT, shutting down gracefully...');
-  
-  if (streamingSystem) {
-    try {
-      await streamingSystem.dataStreamer.stopProductionStreaming();
-      await streamingSystem.kafkaService.disconnect();
-      console.log('✅ Streaming system shut down');
-    } catch (error) {
-      console.error('❌ Error shutting down streaming system:', error);
-    }
-  }
-  
-  server.close(() => {
-    console.log('✅ Main server closed');
-    process.exit(0);
-  });
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  gracefulShutdown('unhandledRejection');
 });
 
 // Start the server

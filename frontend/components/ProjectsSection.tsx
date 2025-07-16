@@ -31,7 +31,9 @@ export default function ProjectsSection() {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch("http://localhost:5050/api/projects");
+        
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api';
+        const res = await fetch(`${API_BASE}/projects`);
         
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);

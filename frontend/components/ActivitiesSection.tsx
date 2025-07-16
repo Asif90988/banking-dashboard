@@ -25,7 +25,9 @@ export default function ActivitiesSection() {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch("http://localhost:5050/api/activities");
+        
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api';
+        const res = await fetch(`${API_BASE}/activities`);
         
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);

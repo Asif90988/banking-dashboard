@@ -33,8 +33,11 @@ export default function BudgetSection() {
         setLoading(true);
         setError(null);
         
+        // Environment-aware API base URL
+        const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api';
+        
         // Fetch budget overview
-        const overviewRes = await fetch("http://localhost:5050/api/budget/overview");
+        const overviewRes = await fetch(`${API_BASE}/budget/overview`);
         if (!overviewRes.ok) {
           throw new Error(`HTTP error! status: ${overviewRes.status}`);
         }
@@ -42,7 +45,7 @@ export default function BudgetSection() {
         setBudgetOverview(overviewData);
 
         // Fetch budget by SVP
-        const svpRes = await fetch("http://localhost:5050/api/budget/by-svp");
+        const svpRes = await fetch(`${API_BASE}/budget/by-svp`);
         if (!svpRes.ok) {
           throw new Error(`HTTP error! status: ${svpRes.status}`);
         }

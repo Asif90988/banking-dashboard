@@ -70,7 +70,9 @@ export default function ComplianceAnalytics() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5050/api/compliance/analytics');
+      
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api';
+      const response = await fetch(`${API_BASE}/compliance/analytics`);
       const result = await response.json();
       setData(result);
     } catch (error) {

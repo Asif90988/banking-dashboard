@@ -60,13 +60,15 @@ export default function BudgetAnalytics() {
     try {
       setLoading(true);
       
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api';
+      
       // Fetch budget overview
-      const overviewRes = await fetch("http://localhost:5050/api/budget/overview");
+      const overviewRes = await fetch(`${API_BASE}/budget/overview`);
       const overviewData = await overviewRes.json();
       setBudgetOverview(overviewData);
 
       // Fetch and deduplicate SVP data
-      const svpRes = await fetch("http://localhost:5050/api/budget/by-svp");
+      const svpRes = await fetch(`${API_BASE}/budget/by-svp`);
       const svpData = await svpRes.json();
       
       const deduplicatedSVPs = Array.isArray(svpData) ? 

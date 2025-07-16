@@ -74,7 +74,9 @@ export default function ProjectsAnalytics() {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const res = await fetch("http://localhost:5050/api/projects");
+      
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api';
+      const res = await fetch(`${API_BASE}/projects`);
       const data = await res.json();
       setProjects(Array.isArray(data) ? data : data.data || []);
     } catch (error) {

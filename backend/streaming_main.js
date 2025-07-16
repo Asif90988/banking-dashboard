@@ -116,7 +116,7 @@ async function initializeStreamingSystem() {
     
     // Start server only if running as standalone
     if (require.main === module) {
-      const STREAMING_PORT = process.env.STREAMING_PORT || 3001;
+      const STREAMING_PORT = process.env.STREAMING_PORT || 3002;
       server.listen(STREAMING_PORT, () => {
         console.log(`✅ Streaming server running on port ${STREAMING_PORT}`);
         console.log(`📊 Health check: http://localhost:${STREAMING_PORT}/health`);
@@ -124,26 +124,74 @@ async function initializeStreamingSystem() {
       });
     }
     
-    // Graceful shutdown
-    process.on('SIGTERM', async () => {
-      console.log('🛑 Shutting down streaming system...');
-      await dataStreamer.stopProductionStreaming();
-      await kafkaService.disconnect();
-      server.close(() => {
-        console.log('✅ Streaming server closed');
-        process.exit(0);
-      });
-    });
+    // Improved graceful shutdown for streaming system
+    let streamingShuttingDown = false;
     
-    process.on('SIGINT', async () => {
-      console.log('🛑 Received SIGINT, shutting down streaming system...');
-      await dataStreamer.stopProductionStreaming();
-      await kafkaService.disconnect();
-      server.close(() => {
-        console.log('✅ Streaming server closed');
-        process.exit(0);
+    async function shutdownStreaming(signal) {
+      if (streamingShuttingDown) {
+        console.log('⚠️ Streaming shutdown already in progress...');
+        return;
+      }
+      
+      streamingShuttingDown = true;
+      console.log(`🛑 Streaming system received ${signal}, shutting down...`);
+      
+      const shutdownTimeout = setTimeout(() => {
+        console.log('⚠️ Force exiting streaming system due to timeout');
+        process.exit(1);
+      }, 10000);
+      
+      try {
+        if (dataStreamer) {
+          console.log('📡 Stopping data streaming...');
+          await dataStreamer.stopProductionStreaming();
+          console.log('✅ Data streaming stopped');
+        }
+        
+        if (kafkaService) {
+          console.log('🔌 Disconnecting Kafka service...');
+          await kafkaService.disconnect();
+          console.log('✅ Kafka service disconnected');
+        }
+        
+        if (server) {
+          server.close((err) => {
+            clearTimeout(shutdownTimeout);
+            if (err) {
+              console.error('❌ Error closing streaming server:', err);
+              process.exit(1);
+            } else {
+              console.log('✅ Streaming server closed');
+              process.exit(0);
+            }
+          });
+        } else {
+          clearTimeout(shutdownTimeout);
+          process.exit(0);
+        }
+        
+      } catch (error) {
+        clearTimeout(shutdownTimeout);
+        console.error('❌ Error during streaming shutdown:', error);
+        process.exit(1);
+      }
+    }
+    
+    // Only set up signal handlers if running as standalone
+    if (require.main === module) {
+      process.on('SIGTERM', () => shutdownStreaming('SIGTERM'));
+      process.on('SIGINT', () => shutdownStreaming('SIGINT'));
+      
+      process.on('uncaughtException', (error) => {
+        console.error('❌ Streaming uncaught exception:', error);
+        shutdownStreaming('uncaughtException');
       });
-    });
+      
+      process.on('unhandledRejection', (reason, promise) => {
+        console.error('❌ Streaming unhandled rejection at:', promise, 'reason:', reason);
+        shutdownStreaming('unhandledRejection');
+      });
+    }
     
     // Export for integration with main server
     return {

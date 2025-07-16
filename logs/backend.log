@@ -1,0 +1,50 @@
+⚠️ Oracle driver not installed - Oracle features will be disabled
+🚀 Initializing enterprise connections...
+🔌 Initializing enterprise database connections...
+✅ Enterprise database connections initialized
+🤖 Initializing Predictive Analytics Engine...
+🧠 Initializing ML models...
+🔍 Initializing Anomaly Detection System...
+🧠 Initializing anomaly detectors...
+🔄 Initializing streaming system...
+🚀 Initializing Real-Time Streaming System...
+{"level":"WARN","timestamp":"2025-07-16T18:54:52.162Z","logger":"kafkajs","message":"KafkaJS v2.0.0 switched default partitioner. To retain the same partitioning behavior as in previous versions, create the producer with the option \"createPartitioner: Partitioners.LegacyPartitioner\". See the migration guide at https://kafka.js.org/docs/migration-guide-v2.0.0#producer-new-default-partitioner for details. Silence this warning by setting the environment variable \"KAFKAJS_NO_PARTITIONER_WARNING=1\""}
+🚀 Initializing Kafka Streaming Service...
+❌ Uncaught Exception: Error: listen EADDRINUSE: address already in use :::5050
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at startServer (/Users/asif/Desktop/citi-dashboard/backend/server.js:249:12)
+    at Object.<anonymous> (/Users/asif/Desktop/citi-dashboard/backend/server.js:361:1)
+    at Module._compile (node:internal/modules/cjs/loader:1692:14)
+    at Object..js (node:internal/modules/cjs/loader:1824:10)
+    at Module.load (node:internal/modules/cjs/loader:1427:32)
+    at Module._load (node:internal/modules/cjs/loader:1250:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:152:5)
+    at node:internal/main/run_main_module:33:47 {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 5050
+}
+🛑 Received uncaughtException, shutting down gracefully...
+🔌 Closing database connections...
+🔗 Initializing enterprise API connections...
+✅ Enterprise API connections initialized
+📊 Enterprise data sources registered
+✅ Enterprise connections initialized successfully
+ Database connected successfully
+✅ Database connections closed
+🔌 Closing WebSocket connections...
+✅ WebSocket connections closed
+❌ Error closing server: Error [ERR_SERVER_NOT_RUNNING]: Server is not running.
+    at Server.close (node:net:2359:12)
+    at Object.onceWrapper (node:events:621:28)
+    at Server.emit (node:events:519:35)
+    at emitCloseNT (node:net:2419:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:89:21) {
+  code: 'ERR_SERVER_NOT_RUNNING'
+}
